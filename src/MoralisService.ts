@@ -103,9 +103,10 @@ export class MoralisService {
     }
 
     async onTxReceived(tx: UnifiedTxDocument) {
-        const message = await this.convertTxToMessage(tx);
-
         try {
+            const message = await this.convertTxToMessage(tx);
+            console.log(message)
+
             const cachedMessageId = this.txHashMessageIdCache[tx.hash]
             if (cachedMessageId) {
                 await this.mainApp.telegramService.editChannelMessage(cachedMessageId, message);
@@ -123,6 +124,7 @@ export class MoralisService {
 
     async handleWebhook(data: IWebhook) {
         const result = this.batchProcessor.process(data)
+        console.log(result)
 
         return Promise.all(
             [result.txs(), result.internalTxs()].flat()
