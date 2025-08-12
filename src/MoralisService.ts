@@ -10,22 +10,54 @@ import { truncateMiddle } from "friendly-truncate";
 const blockchain: {
     [key: number]: {
         nativeCurrency: string,
-        blockExplorer: string,
-        explorerType?: "EVM" | "SOL"
+        blockExplorer: string
     }
 } = {
-    1: { nativeCurrency: "ETH", blockExplorer: "https://etherscan.io/", explorerType: "EVM" },
-    10: { nativeCurrency: "ETH", blockExplorer: "https://optimistic.etherscan.io/", explorerType: "EVM" },
-    56: { nativeCurrency: "BNB", blockExplorer: "https://bscscan.com/", explorerType: "EVM" },
-    137: { nativeCurrency: "MATIC", blockExplorer: "https://polygonscan.com/", explorerType: "EVM" },
-    250: { nativeCurrency: "FTM", blockExplorer: "https://ftmscan.com/", explorerType: "EVM" },
-    8453: { nativeCurrency: "ETH", blockExplorer: "https://basescan.org/", explorerType: "EVM" },
-    42161: { nativeCurrency: "ETH", blockExplorer: "https://arbiscan.io/", explorerType: "EVM" },
-    43114: { nativeCurrency: "AVAX", blockExplorer: "https://snowtrace.io/", explorerType: "EVM" },
+    1: {
+        nativeCurrency: "ETH",
+        blockExplorer: "https://etherscan.io/"
+    },
+    10: {
+        nativeCurrency: "ETH",
+        blockExplorer: "https://optimistic.etherscan.io/"
+    },
+    56: {
+        nativeCurrency: "BNB",
+        blockExplorer: "https://bscscan.com/"
+    },
+    137: {
+        nativeCurrency: "MATIC",
+        blockExplorer: "https://polygonscan.com/"
+    },
+    250: {
+        nativeCurrency: "FTM",
+        blockExplorer: "https://ftmscan.com/"
+    },
+    8453: {
+        nativeCurrency: "ETH",
+        blockExplorer: "https://basescan.org/"
+    },
+    42161: {
+        nativeCurrency: "ETH",
+        blockExplorer: "https://arbiscan.io/"
+    },
+    43114: {
+        nativeCurrency: "AVAX",
+        blockExplorer: "https://snowtrace.io/"
+    },
     // Solana networks
-    101: { nativeCurrency: "SOL", blockExplorer: "https://explorer.solana.com", explorerType: "SOL" }, // Mainnet
-    102: { nativeCurrency: "SOL", blockExplorer: "https://explorer.solana.com?cluster=testnet", explorerType: "SOL" }, // Testnet
-    103: { nativeCurrency: "SOL", blockExplorer: "https://explorer.solana.com?cluster=devnet", explorerType: "SOL" }, // Devnet
+    101: { // Mainnet Beta
+        nativeCurrency: "SOL",
+        blockExplorer: "https://explorer.solana.com/"
+    },
+    102: { // Testnet
+        nativeCurrency: "SOL",
+        blockExplorer: "https://explorer.solana.com/?cluster=testnet"
+    },
+    103: { // Devnet
+        nativeCurrency: "SOL",
+        blockExplorer: "https://explorer.solana.com/?cluster=devnet"
+    },
 }
 
 interface UnifiedTxDocument {
@@ -53,10 +85,11 @@ export class MoralisService {
         private mainApp: MainApplication,
         private apiKey: string,
         private streamId: string,
-    ) {}
+    ) {
+    }
 
     async start() {
-        await Moralis.start({ apiKey: this.apiKey, streamsSecret: this.apiKey });
+        await Moralis.start({ apiKey: this.apiKey, streamsSecret: this.apiKey, });
     }
 
     async addAddress(address: string) {
@@ -105,37 +138,28 @@ export class MoralisService {
     }
 
     async convertTxToMessage(tx: UnifiedTxDocument) {
-        const config = blockchain[tx.chainId];
-        if (!config) throw new Error("Unsupported chainId: " + tx.chainId);
+        const { nativeCurrency, blockExplorer } = blockchain[tx.chainId] ?? {};
+        if (!nativeCurrency) throw new Error("Unsupported chainId: " + tx.chainId);
 
-        const { nativeCurrency, blockExplorer, explorerType } = config;
-
-        // Формируем ссылки в зависимости от типа блокчейна
         const to = tx.to ?? tx.toAddress ?? "";
         const toName = await this.mainApp.redisService.getAddressName(to).catch(error => (console.error("Error #7976", error), null))
         const toTrunc = truncateMiddle(to, 12);
-        const toUrl = explorerType === "SOL"
-            ? `${blockExplorer}/address/${to}`
-            : `${blockExplorer}/address/${to}`;
+        const toUrl = new URL("address/" + to, blockExplorer);
         const toMark = `[${escapers.MarkdownV2(toName ?? toTrunc)}](${toUrl})`;
 
         const from = tx.from ?? tx.fromAddress ?? "";
         const fromName = await this.mainApp.redisService.getAddressName(from).catch(error => (console.error("Error #7976", error), null))
         const fromTrunc = truncateMiddle(from, 12);
-        const fromUrl = explorerType === "SOL"
-            ? `${blockExplorer}/address/${from}`
-            : `${blockExplorer}/address/${from}`;
+        const fromUrl = new URL("address/" + from, blockExplorer);
         const fromMark = `[${escapers.MarkdownV2(fromName ?? fromTrunc)}](${fromUrl})`;
 
         const hashTrunc = truncateMiddle(tx.hash, 12);
-        const hashUrl = explorerType === "SOL"
-            ? `${blockExplorer}/tx/${tx.hash}`
-            : `${blockExplorer}/tx/${tx.hash}`;
+        const hashUrl = new URL("tx/" + tx.hash, blockExplorer);
         const hashMark = `[${escapers.MarkdownV2(hashTrunc)}](${hashUrl})`;
 
-        // Формат суммы
+        // Форматирование суммы для EVM и Solana
         const valueFormatted = nativeCurrency === "SOL"
-            ? escapers.MarkdownV2((Number(tx.value) / 1e9).toFixed(6))
+            ? escapers.MarkdownV2((Number(tx.value) / 1e9).toFixed(6)) // lamports → SOL
             : escapers.MarkdownV2(ethers.formatEther(tx.value).slice(0, 6));
 
         const chainMark = escapers.MarkdownV2(`(chain: ${tx.chainId})`);
@@ -151,6 +175,7 @@ export class MoralisService {
             `${valueFormatted} ${nativeCurrency} ${chainMark}`
         ].join("\n");
     }
+
 }
 
 export function isValidWebhookData(data: unknown, signature?: string | null): data is IWebhook {
