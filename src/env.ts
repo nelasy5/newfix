@@ -1,14 +1,19 @@
-export const MORALIS_API_KEY = process.env.MORALIS_API_KEY!;
-if (!MORALIS_API_KEY) throw new Error("empty MORALIS_API_KEY")
+TELEGRAM_BOT_TOKEN=8150423024:AAH40TOE_rIoFKEuWJL7Sbs9cA_ljXyEgmY
+TELEGRAM_CHANNEL_ID=-1002512246731
 
-export const MORALIS_STREAM_ID = process.env.MORALIS_STREAM_ID!;
-if (!MORALIS_STREAM_ID) throw new Error("empty MORALIS_STREAM_ID")
+SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
+SOLANA_WSS_URL=wss://api.mainnet-beta.solana.com
 
-export const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN!;
-if (!TELEGRAM_BOT_TOKEN) throw new Error("empty TELEGRAM_BOT_TOKEN")
+# Инициализационные адреса (если Redis пуст) — опционально
+MONITOR_ADDRESSES=4Nd1mYEXAMPLE,9xQeWEXAMPLE
 
-export const TELEGRAM_CHANNEL_ID = process.env.TELEGRAM_CHANNEL_ID!;
-if (!TELEGRAM_CHANNEL_ID) throw new Error("empty TELEGRAM_CHANNEL_ID")
+# Какой обозреватель ссылок использовать
+EXPLORER=solscan
 
-export const REDIS_URL = process.env.REDIS_URL!;
-if (!REDIS_URL) throw new Error("empty REDIS_URL")
+# Redis (Railway или иной провайдер)
+REDIS_URL=redis://default:iRZJXkXMvemquZNMXpoceZQbZjaSAZWx@redis-bfbw.railway.internal:6379
+
+# (опционально) кто может выполнять /add /remove — chat.id через запятую
+# Узнать свой chat.id можно, написав боту /ping — id в msg.chat.id в логах,
+# либо воспользовавшись @getidsbot
+ALLOWED_USER_IDS=123456789
